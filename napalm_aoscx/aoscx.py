@@ -23,6 +23,7 @@ import tempfile
 import uuid
 import inspect
 import logging
+import time
 from collections import defaultdict
 
 from netaddr import IPNetwork
@@ -131,7 +132,7 @@ class AOSCXDriver(NetworkDriver):
         switch = Device(self.session)
         switch.get()
         switch.get_subsystems()
-        uptime_seconds = (int(switch.boot_time))/1000
+        uptime_seconds = int(time.time()) - switch.boot_time
         interface_list = Interface.get_all(self.session)
         product_info = {}
         keys = ['management_module,1/1', 'chassis,1']
@@ -567,7 +568,7 @@ class AOSCXDriver(NetworkDriver):
             
             mac_entries.append(
                 {
-                    'mac': mac,
+                    'mac': mac_address,
                     'interface': interface,
                     'vlan': vlan,
                     'static': (mac_type == 'static'),
