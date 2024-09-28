@@ -16,6 +16,7 @@ may have not been properly tested in older versions.
     * get_mac_address_table - Get the MAC Address table from a device.
     * get_ntp_servers - Gets NTP information from a network device.
     * get_snmp_information - Get the SNMP information of a device.
+    * get_vlans - Get the Vlans information of a device.
     * is_alive - Check to see if the connection to the device is up.
     * ping - Execute a ping command from the device.
     
@@ -30,9 +31,12 @@ The following software is required:
  - Python3
  - Pip
  - Python modules specified in `requirements.txt`
-    - pyaoscx
+    - pyaoscx v1.0.0
     - requests
     - urllib3
+   
+**Note that the current version of this driver utilizes pyaoscx v1 only.  Future versions of this driver will be 
+      compatible with pyaoscx v2**
 
 
 ## Installing

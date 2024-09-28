@@ -49,7 +49,7 @@ import napalm.base.constants as c
 
 # Aruba AOS-CX lib
 import pyaoscx
-from pyaoscx import session, interface, system, common_ops, port, lldp, mac, vrf, arp
+from pyaoscx import session, interface, system, common_ops, port, lldp, mac, vlan, vrf, arp
 
 class AOSCXDriver(NetworkDriver):
     """NAPALM driver for Aruba AOS-CX."""
@@ -76,7 +76,7 @@ class AOSCXDriver(NetworkDriver):
         Implementation of NAPALM method 'open' to open a connection to the device.
         """
         try:
-            self.session_info = dict(s=pyaoscx.session.login(self.base_url, self.username,
+            self.session_info = dict(s=session.login(self.base_url, self.username,
                                                              self.password), url=self.base_url)
             self.isAlive = True
         except ConnectionError as error:
@@ -88,7 +88,7 @@ class AOSCXDriver(NetworkDriver):
         Implementation of NAPALM method 'close'. Closes the connection to the device and does
         the necessary cleanup.
         """
-        pyaoscx.session.logout(**self.session_info)
+        session.logout(**self.session_info)
         self.isAlive = False
 
     def is_alive(self):
@@ -160,9 +160,9 @@ class AOSCXDriver(NetworkDriver):
          * mac_address (string)
         """
         interfaces_return = {}
-        interface_list = pyaoscx.interface.get_all_interface_names(**self.session_info)
+        interface_list = interface.get_all_interface_names(**self.session_info)
         for line in interface_list:
-            interface_details = pyaoscx.interface.get_interface(line, **self.session_info)
+            interface_details = interface.get_interface(line, **self.session_info)
             if 'description' not in interface_details:
                 interface_details['description'] = ""
             if 'max_speed' not in interface_details['hw_intf_info']:
@@ -214,7 +214,7 @@ class AOSCXDriver(NetworkDriver):
             * rx_broadcast_packets (int)
         """
         interface_stats_dictionary = {}
-        interface_list = pyaoscx.interface.get_all_interface_names(**self.session_info)
+        interface_list = interface.get_all_interface_names(**self.session_info)
         for line in interface_list:
             interface_details = pyaoscx.interface.get_interface(
                 line, selector="statistics", **self.session_info)
@@ -284,13 +284,13 @@ class AOSCXDriver(NetworkDriver):
             * port
         """
         lldp_brief_return = {}
-        lldp_interfaces_list = pyaoscx.lldp.get_all_lldp_neighbors(**self.session_info)
+        lldp_interfaces_list = lldp.get_all_lldp_neighbors(**self.session_info)
         for interface_uri in lldp_interfaces_list:
             interface_name = interface_uri[interface_uri.find('interfaces/') + 11:
                                            interface_uri.rfind('/lldp_neighbors')]
-            interface_name = pyaoscx.common_ops._replace_percents(interface_name)
+            interface_name = common_ops._replace_percents(interface_name)
             interface_details = \
-                pyaoscx.lldp.get_lldp_neighbor_info(interface_name, **self.session_info)
+                lldp.get_lldp_neighbor_info(interface_name, **self.session_info)
 
             if interface_name not in lldp_brief_return.keys():
                 lldp_brief_return[interface_name] = []
@@ -338,18 +338,18 @@ class AOSCXDriver(NetworkDriver):
         if interface:
             lldp_interfaces.append(interface)
         else:
-            lldp_interfaces_list = pyaoscx.lldp.get_all_lldp_neighbors(**self.session_info)
+            lldp_interfaces_list = lldp.get_all_lldp_neighbors(**self.session_info)
             for interface_uri in lldp_interfaces_list:
                 interface_name = interface_uri[interface_uri.find('interfaces/') + 11:
                                                interface_uri.rfind('/lldp_neighbors')]
-                interface_name = pyaoscx.common_ops._replace_percents(interface_name)
+                interface_name = common_ops._replace_percents(interface_name)
                 lldp_interfaces.append(interface_name)
 
         for single_interface in lldp_interfaces:
             if single_interface not in lldp_details_return.keys():
                 lldp_details_return[single_interface] = []
 
-            interface_details = pyaoscx.lldp.get_lldp_neighbor_info(single_interface, **self.session_info)
+            interface_details = lldp.get_lldp_neighbor_info(single_interface, **self.session_info)
             remote_capabilities = ''.join(
                 [x.lower() for x in interface_details['neighbor_info']['chassis_capability_available']])
             remote_enabled = ''.join(
@@ -503,65 +503,48 @@ class AOSCXDriver(NetworkDriver):
         Values of the main dictionary represent are dictionaries that may consist of two keys
         'ipv4' and 'ipv6' (one, both or none) which are themselves dictionaries with the IP
         addresses as keys.
+        Note: VSF ports are not implemented
         Each IP Address dictionary has the following keys:
             * prefix_length (int)
         """
         interface_ip_dictionary = {}
-        interface_list = pyaoscx.interface.get_all_interface_names(**self.session_info)
+        interface_list = interface.get_all_interface_names(**self.session_info)
         for line in interface_list:
-            interface_info = pyaoscx.port.get_port(line, **self.session_info)
-            interface_ip_dictionary = {
-                line: {}
-            }
-
+            interface_info = port.get_port(line, **self.session_info)
             try:
-
-                if interface_info['ip4_address']:
-                    # if interface_info.get('ip4_address'):
-                    interface_ip_dictionary[line]['ipv4'] = {
-                        interface_info['ip4_address'][:interface_info['ip4_address'].rfind('/')]: {
-                            'prefix_length':
-                                int(interface_info['ip4_address']
-                                    [interface_info['ip4_address'].rfind('/') + 1:])
+                interface_ip_list = {}
+                ip4_address = {}
+                if ('ip4_address' in interface_info and len(interface_info['ip4_address']) > 0):
+                    ip4_address= {
+                    interface_info['ip4_address'][:interface_info['ip4_address'].rfind('/')]: {
+                        'prefix_length':
+                            int(interface_info['ip4_address']
+                            [interface_info['ip4_address'].rfind('/') + 1:])
                         }
                     }
-                if interface_info.get('ip6_addresses'):
-                    for address in interface_info['ip6_addresses']:
-                        if (interface_ip_dictionary.get(line)):
-                            if (interface_ip_dictionary.get(line).get('ipv6')):
-                                interface_ip_dictionary.get(line).get('ipv6').update(
-                                    {
-                                        address[:address.rfind('/')]: {
-                                            'prefix_length': int(address[address.rfind('/') + 1:])
-                                        }
-                                    }
-                                )
-                if interface_info.get('ip6_address_link_local'):
-                    for address_ll in interface_info['ip6_address_link_local']:
-                        if interface_ip_dictionary.get(line):
-                            if interface_ip_dictionary.get(line).get('ipv6'):
-                                interface_ip_dictionary.get(line).get('ipv6').update(
-                                    {
-                                        address_ll[:address_ll.rfind('/')]: {
-                                            'prefix_length': int(
-                                                address_ll[address_ll.rfind('/') + 1:])
-                                        }
-                                    }
-                                )
-                if interface_info.get('ip6_autoconfigured_addresses'):
-                    for address_auto in interface_info['ip6_autoconfigured_addresses']:
-                        # if interface_
-                        interface_ip_dictionary[line]['ipv6'].update(
-                            {
-                                address_auto[:address_auto.rfind('/')]: {
-                                    'prefix_length': int(address_auto[address_auto.rfind('/') + 1:])
-                                }
+                ipv6_addresses = {}
+                ip6_keys = ['ip6_addresses', 'ip6_address_link_local', 'ip6_autoconfigured_addresses']
+                for key in ip6_keys:
+                    if (key in interface_info and len(interface_info[key]) > 0):
+                        for address in interface_info[key]:
+                            ipv6_addresses[address[:address.rfind('/')]] = {
+                                'prefix_length': int(address[address.rfind('/') + 1:])
                             }
-                        )
+                            
+                if (len(ip4_address) > 0):
+                    interface_ip_list['ipv4'] = ip4_address
+
+                if (len(ipv6_addresses) > 0):
+                    interface_ip_list['ipv6'] = ipv6_addresses
+
+                if (len(interface_ip_list) > 0):
+                    interface_ip_dictionary[line] = interface_ip_list
+
             except Exception as e:
                 print(line)
                 print(e)
         return interface_ip_dictionary
+
 
     def get_mac_address_table(self):
         """
@@ -579,19 +562,19 @@ class AOSCXDriver(NetworkDriver):
             * last_move (float)
         """
         mac_entries = []
-        mac_list = pyaoscx.mac.get_all_mac_addresses_on_system(**self.session_info)
+        mac_list = mac.get_all_mac_addresses_on_system(**self.session_info)
         for mac_uri in mac_list:
             full_uri = mac_uri[mac_uri.find('vlans/') + 6:]
-            mac = pyaoscx.common_ops._replace_special_characters(full_uri[full_uri.rfind('/') + 1:])
+            mac = common_ops._replace_special_characters(full_uri[full_uri.rfind('/') + 1:])
             full_uri = full_uri[:full_uri.rfind('/')]
             mac_type = full_uri[full_uri.rfind('/') + 1:]
             full_uri = full_uri[:full_uri.rfind('/')]
             vlan = int(full_uri[:full_uri.rfind('/')])
-            mac_info = pyaoscx.mac.get_mac_info(vlan, mac_type, mac, **self.session_info)
+            mac_info = mac.get_mac_info(vlan, mac_type, mac, **self.session_info)
             mac_entries.append(
                 {
                     'mac': mac,
-                    'interface': mac_info['port'][mac_info['port'].rfind('/')+1],
+                    'interface': mac_info['port'][mac_info['port'].rfind('/')+1:],
                     'vlan': vlan,
                     'static': (mac_type == 'static'),
                     'active': True,
@@ -612,6 +595,7 @@ class AOSCXDriver(NetworkDriver):
                 * mode (string) # read-write (rw), read-only (ro) (Unsupported)
             * contact (string)
             * location (string)
+        Empty attributes are returned as an empty string (e.g. '') where applicable.
         """
         snmp_dict = {
             "chassis_id": "",
@@ -620,8 +604,8 @@ class AOSCXDriver(NetworkDriver):
             "location": ""
         }
 
-        systeminfo = pyaoscx.system.get_system_info(**self.session_info)
-        productinfo = pyaoscx.system.get_product_info(**self.session_info)
+        systeminfo = system.get_system_info(**self.session_info)
+        productinfo = system.get_product_info(**self.session_info)
 
         communities_dict = {}
         for community_name in systeminfo['snmp_communities']:
@@ -632,8 +616,10 @@ class AOSCXDriver(NetworkDriver):
 
         snmp_dict['chassis_id'] = productinfo['product_info']['serial_number']
         snmp_dict['community'] = communities_dict
-        snmp_dict['contact'] = systeminfo['other_config']['system_contact']
-        snmp_dict['location'] = systeminfo['other_config']['system_location']
+        if 'system_contact' in systeminfo['other_config']:
+            snmp_dict['contact'] = systeminfo['other_config']['system_contact']
+        if 'system_location' in systeminfo['other_config']:
+            snmp_dict['location'] = systeminfo['other_config']['system_location']
 
         return snmp_dict
 
@@ -960,3 +946,38 @@ class AOSCXDriver(NetworkDriver):
             configuration_json = response.json()
 
         return configuration_json
+
+def get_vlans(self):
+        """
+        Implementation of NAPALM method 'get_vlans'. This is used to retrieve all vlan
+        information. 
+
+        :return: Returns a dictionary of dictionaries. The keys for the first dictionary will be the
+        vlan_id of the vlan. The inner dictionary will containing the following data for
+        each vlan:
+         * name (text_type)
+         * interfaces (list)
+        """
+        ports_list = port.get_all_ports(**self.session_info)
+        vlan_interface_data = defaultdict(list)
+        for port_entry in ports_list:
+            port_data = port.get_port(port_entry.split('/')[-1], 2, **self.session_info)
+            if '/' in port_data['name']:
+                if (len(port_data['applied_vlan_trunks']) > 0):
+                    vlan_id = port_data['applied_vlan_trunks'][0]['id']
+                    vlan_interface_data[vlan_id].append(port_data['name'])
+                elif 'applied_vlan_tag' in port_data:
+                    vlan_id = port_data['applied_vlan_tag']['id']
+                    vlan_interface_data[vlan_id].append(port_data['name'])
+        vlans_list = vlan.get_all_vlans(**self.session_info)
+        vlans_json = {}
+        for vlan_entry in vlans_list:
+            vlan_id = int(vlan_entry.split('/')[-1])
+            vlan_data = vlan.get_vlan(vlan_id, selector="configuration",**self.session_info)
+            if 'name' not in vlan_data:
+                vlan_data = vlan.get_vlan(vlan_id, selector="status",**self.session_info)
+            vlans_json[vlan_id] = {
+                "name": vlan_data['name'],
+                "interfaces": vlan_interface_data[vlan_id]
+            }
+        return vlans_json
