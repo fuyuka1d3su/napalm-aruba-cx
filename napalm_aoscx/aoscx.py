@@ -145,7 +145,17 @@ class AOSCXDriver(NetworkDriver):
             hostname = "ArubaCX"
         else:
             hostname = switch.mgmt_intf_status['hostname']
-
+            
+        if 'domain_name' not in switch.mgmt_intf_status:
+            domain_name = ""
+        else:
+            domain_name = switch.mgmt_intf_status['domain_name']
+            
+        if (domain_name is not None) and (len(domain_name) > 0):
+            fqdn = hostname + '.' + domain_name
+        else:
+            fqdn = hostname
+            
         fact_info = {
             'uptime': uptime_seconds,
             'vendor': 'Aruba',
@@ -153,7 +163,7 @@ class AOSCXDriver(NetworkDriver):
             'serial_number': product_info['serial_number'],
             'model': product_info['product_name'],
             'hostname': hostname,
-            'fqdn': hostname,
+            'fqdn': fqdn,
             'interface_list': list(interface_list.keys())
         }
         return fact_info
@@ -789,31 +799,29 @@ class AOSCXDriver(NetworkDriver):
 
     #     return ping_dict
 
-    # def _get_fan_info(self, params={}, **kwargs):
-    #     """
-    #     Perform a GET call to get the fan information of the switch
-    #     Note that this works for physical devices, not an OVA.
+    def _get_fan_info(self, params={}, **kwargs):
+        """
+        Perform a GET call to get the fan information of the switch
+        Note that this works for physical devices, not an OVA.
 
-    #     :param params: Dictionary of optional parameters for the GET request
-    #     :param kwargs:
-    #         keyword s: requests.session object with loaded cookie jar
-    #         keyword url: URL in main() function
-    #     :return: Dictionary containing fan information
-    #     """
+        :param params: Dictionary of optional parameters for the GET request
+        :param kwargs:
+            keyword s: requests.session object with loaded cookie jar
+            keyword url: URL in main() function
+        :return: Dictionary containing fan information
+        """
+        
+        switch = Device(self.session)
+        switch.get()
+        switch.get_subsystems()
+        
+        keys = ['management_module,1/1', 'chassis,1']
+        for key in keys:
+            if (len(switch.subsystems[key]['fans']) > 0):
+                fan_info_dict = switch.subsystems[key]['fans']
+                break
 
-    #     target_url = kwargs["url"] + "system/subsystems/*/*/fans/*"
-
-    #     response = kwargs["s"].get(target_url, params=params, verify=False)
-
-    #     if not common_ops._response_ok(response, "GET"):
-    #         logging.warning("FAIL: Getting dictionary of fan information failed with status code %d: %s"
-    #                         % (response.status_code, response.text))
-    #         fan_info_dict = {}
-    #     else:
-    #         logging.info("SUCCESS: Getting dictionary of fan information succeeded")
-    #         fan_info_dict = response.json()
-
-    #     return fan_info_dict
+        return fan_info_dict
 
     # def _get_temperature(self, params={}, **kwargs):
     #     """
@@ -841,31 +849,29 @@ class AOSCXDriver(NetworkDriver):
 
     #     return temp_info_dict
 
-    # def _get_power_supplies(self, params={}, **kwargs):
-    #     """
-    #     Perform a GET call to get the power supply information of the switch
-    #     Note that this works for physical devices, not an OVA.
+    def _get_power_supplies(self, params={}, **kwargs):
+        """
+        Perform a GET call to get the power supply information of the switch
+        Note that this works for physical devices, not an OVA.
 
-    #     :param params: Dictionary of optional parameters for the GET request
-    #     :param kwargs:
-    #         keyword s: requests.session object with loaded cookie jar
-    #         keyword url: URL in main() function
-    #     :return: Dictionary containing power supply information
-    #     """
+        :param params: Dictionary of optional parameters for the GET request
+        :param kwargs:
+            keyword s: requests.session object with loaded cookie jar
+            keyword url: URL in main() function
+        :return: Dictionary containing power supply information
+        """
+        
+        switch = Device(self.session)
+        switch.get()
+        switch.get_subsystems()
+        
+        keys = ['management_module,1/1', 'chassis,1']
+        for key in keys:
+            if (len(switch.subsystems[key]['power_supplies']) > 0):
+                power_supply_dict = switch.subsystems[key]['power_supplies']
+                break
 
-    #     target_url = kwargs["url"] + "system/subsystems/*/*/power_supplies/*"
-
-    #     response = kwargs["s"].get(target_url, params=params, verify=False)
-
-    #     if not common_ops._response_ok(response, "GET"):
-    #         logging.warning("FAIL: Getting dictionary of PSU information failed with status code %d: %s"
-    #                         % (response.status_code, response.text))
-    #         temp_info_dict = {}
-    #     else:
-    #         logging.info("SUCCESS: Getting dictionary of PSU information succeeded")
-    #         temp_info_dict = response.json()
-
-    #     return temp_info_dict
+        return power_supply_dict
 
     def _get_resource_utilization(self, params={}, **kwargs):
         """
