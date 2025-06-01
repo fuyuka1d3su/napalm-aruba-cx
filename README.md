@@ -35,10 +35,6 @@ The following software is required:
     - requests
     - urllib3
    
-**Note that the current version of this driver utilizes pyaoscx v1 only.  Future versions of this driver will be 
-      compatible with pyaoscx v2**
-
-
 ## Installing
 To install simply run:
 ```
