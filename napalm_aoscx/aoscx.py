@@ -421,7 +421,9 @@ class AOSCXDriver(NetworkDriver):
         fan_details = self._get_fan_info(self.session) # Passing session object
         fan_dict = {}
         for fan in fan_details:
-            new_dict = {fan_details[fan]["name"]: fan_details[fan]['status'] == 'ok'}
+            new_dict = {
+                fan_details[fan]["name"]: {"status": fan_details[fan]["status"] == "ok"}
+            }
             fan_dict.update(new_dict)
 
         temp_details = self._get_temperature(self.session) # Passing session object
