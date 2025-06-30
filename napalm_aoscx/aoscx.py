@@ -64,14 +64,14 @@ from pyaoscx.bgp_router import BgpRouter
 class AOSCXDriver(NetworkDriver):
     """NAPALM driver for Aruba AOS-CX."""
 
-    def __init__(self, hostname, username, password, version, timeout=60, optional_args=None):
+    def __init__(self, hostname, username, password, timeout=60, optional_args=None):
         """NAPALM Constructor for AOS-CX."""
         if optional_args is None:
             optional_args = {}
         self.hostname = hostname
         self.username = username
         self.password = password
-        self.version = version
+        self.version = "10_09"
         self.timeout = timeout
 
         self.platform = "aoscx"
@@ -370,8 +370,8 @@ class AOSCXDriver(NetworkDriver):
                 lldp_interfaces.append(interface_name)
 
         for single_interface in lldp_interfaces:
-            if single_interface not in lldp_details_return.keys():
-                lldp_details_return[single_interface] = []
+            if single_interface.replace("%2F", "/") not in lldp_details_return.keys():
+                lldp_details_return[single_interface.replace("%2F", "/")] = []
 
             interface_details = lldp_interfaces_list[single_interface]
             
@@ -381,9 +381,9 @@ class AOSCXDriver(NetworkDriver):
                     [x.lower() for x in interface_details[neighbor]['neighbor_info']['chassis_capability_available']])
                 remote_enabled = ''.join(
                     [x.lower() for x in interface_details[neighbor]['neighbor_info']['chassis_capability_enabled']])
-                lldp_details_return[single_interface].append(
+                lldp_details_return[single_interface.replace("%2F", "/")].append(
                     {
-                        'parent_interface': single_interface,
+                        'parent_interface': single_interface.replace("%2F", "/"),
                         'remote_chassis_id': interface_details[neighbor]['chassis_id'],
                         'remote_system_name': interface_details[neighbor]['neighbor_info']['chassis_name'],
                         'remote_port': interface_details[neighbor]['port_id'],
@@ -395,6 +395,7 @@ class AOSCXDriver(NetworkDriver):
                         'remote_system_enable_capab':  remote_enabled
                         }
                 )
+        
         return lldp_details_return
 
     # def get_environment(self):
