@@ -821,6 +821,8 @@ class AOSCXDriver(NetworkDriver):
         switch = Device(self.session)
         switch.get()
         switch.get_subsystems()
+
+
         
         keys = ['management_module,1/1', 'chassis,1']
         for key in keys:
@@ -845,6 +847,7 @@ class AOSCXDriver(NetworkDriver):
         switch = Device(self.session)
         switch.get()
         switch.get_subsystems()
+            
         
         keys = ['management_module,1/1', 'chassis,1']
         for key in keys:
@@ -908,41 +911,41 @@ class AOSCXDriver(NetworkDriver):
 
     #     return associations_dict
 
-def get_vlans(self):
-        """
-        Implementation of NAPALM method 'get_vlans'. This is used to retrieve all vlan
-        information. 
+    def get_vlans(self):
+            """
+            Implementation of NAPALM method 'get_vlans'. This is used to retrieve all vlan
+            information. 
 
-        :return: Returns a dictionary of dictionaries. The keys for the first dictionary will be the
-        vlan_id of the vlan. The inner dictionary will containing the following data for
-        each vlan:
-         * name (text_type)
-         * interfaces (list)
-        """
-        
-        vlan_json = {}
-        vlan_list = Vlan.get_facts(self.session)
-        
-        for vlan_id in vlan_list:
-            vlan_json[int(vlan_id)] = {
-                "name": vlan_list[vlan_id]['name'],
-                "interfaces": []
-            }
+            :return: Returns a dictionary of dictionaries. The keys for the first dictionary will be the
+            vlan_id of the vlan. The inner dictionary will containing the following data for
+            each vlan:
+            * name (text_type)
+            * interfaces (list)
+            """
             
-        interface_list = Interface.get_facts(self.session)
-        physical_interface_list = {key: value for key, value in interface_list.items() if '/' in key}
-        
-        for interface in physical_interface_list:
-            interface_facts = interface_list[interface]
-            vlan_ids = []
-            key = ""
-            if 'applied_vlan_trunks' in interface_facts and interface_facts['applied_vlan_trunks'] and (len(interface_facts['applied_vlan_trunks']) > 0):
-                key = 'applied_vlan_trunks'
-            elif 'applied_vlan_tag' in interface_facts and interface_facts['applied_vlan_tag'] and (len(interface_facts['applied_vlan_tag']) > 0):
-                key = 'applied_vlan_tag'
-            if key != "":
-                vlan_ids = [int(key) for key in interface_facts[key]]
-                for id in vlan_ids:
-                    vlan_json[id]['interfaces'].append(interface)
-                    
-        return vlan_json
+            vlan_json = {}
+            vlan_list = Vlan.get_facts(self.session)
+            
+            for vlan_id in vlan_list:
+                vlan_json[int(vlan_id)] = {
+                    "name": vlan_list[vlan_id]['name'],
+                    "interfaces": []
+                }
+                
+            interface_list = Interface.get_facts(self.session)
+            physical_interface_list = {key: value for key, value in interface_list.items() if '/' in key}
+            
+            for interface in physical_interface_list:
+                interface_facts = interface_list[interface]
+                vlan_ids = []
+                key = ""
+                if 'applied_vlan_trunks' in interface_facts and interface_facts['applied_vlan_trunks'] and (len(interface_facts['applied_vlan_trunks']) > 0):
+                    key = 'applied_vlan_trunks'
+                elif 'applied_vlan_tag' in interface_facts and interface_facts['applied_vlan_tag'] and (len(interface_facts['applied_vlan_tag']) > 0):
+                    key = 'applied_vlan_tag'
+                if key != "":
+                    vlan_ids = [int(key) for key in interface_facts[key]]
+                    for id in vlan_ids:
+                        vlan_json[id]['interfaces'].append(interface)
+                        
+            return vlan_json

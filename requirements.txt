@@ -1,6 +1,8 @@
 jinja2
 netaddr
 pyYAML
-https://github.com/fuyuka1d3su/pyaoscx/archive/master.zip
+https://github.com/fuyuka1d3su/pyaoscx/archive/master.zip # patched pyaoscx
 requests
 urllib3
+netmiko
+napalm
