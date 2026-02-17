@@ -140,12 +140,10 @@ class AOSCXDriver(NetworkDriver):
             if (len(switch.subsystems[key]['product_info']['serial_number']) > 0):
                 product_info = switch.subsystems[key]['product_info']
                 break
-            
-        if 'hostname' not in switch.mgmt_intf_status:
-            hostname = "ArubaCX"
+        if (hasattr(switch, 'hostname')):
+            hostname = switch.hostname
         else:
-            hostname = switch.mgmt_intf_status['hostname']
-            
+            hostname = "ArubaCX"
         if 'domain_name' not in switch.mgmt_intf_status:
             domain_name = ""
         else:
