@@ -5,10 +5,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="napalm-aruba-cx",
-    version="0.1.4",
+    version="0.1.4.1",
     author="Aruba Automation",
     author_email="aruba-automation@hpe.com",
-    description="NAPALM drivers for Aruba AOS-CX Switches",
+    description="NAPALM drivers for Aruba AOS-CX Switches, version CSSLaval",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/napalm-automation-community/napalm-aruba-cx",
